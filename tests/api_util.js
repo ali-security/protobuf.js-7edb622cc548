@@ -120,6 +120,28 @@ tape.test("util", function(test) {
         test.end();
     });
 
+    test.test(test.name + " - safeProp", function(test) {
+        test.equal(util.safeProp("validName"), ".validName", "should use dot notation for simple names");
+        test.equal(util.safeProp("bad\nfield").indexOf("\n"), -1, "should escape line feeds");
+        test.equal(util.safeProp("bad\rfield").indexOf("\r"), -1, "should escape carriage returns");
+        test.equal(util.safeProp("bad\u0000field").indexOf("\u0000"), -1, "should escape null bytes");
+
+        var root = protobuf.Root.fromJSON({
+            nested: {
+                Message: {
+                    fields: {
+                        "bad\nfield": { type: "string", id: 1 }
+                    }
+                }
+            }
+        });
+        var Message = root.lookupType("Message");
+        var msg = Message.create({ "bad\nfield": "ok" });
+        test.same(Message.toObject(msg), { "bad\nfield": "ok" }, "should generate usable accessors");
+
+        test.end();
+    });
+
     test.test(test.name + " - type lookups", function(test) {
         test.equal(Object.getPrototypeOf(protobuf.types.basic), null, "should not inherit basic type lookups");
         test.equal(Object.getPrototypeOf(protobuf.types.defaults), null, "should not inherit default value lookups");

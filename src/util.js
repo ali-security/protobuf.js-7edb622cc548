@@ -55,9 +55,6 @@ util.toObject = function toObject(array) {
     return object;
 };
 
-var safePropBackslashRe = /\\/g,
-    safePropQuoteRe     = /"/g;
-
 /**
  * Tests whether the specified name is a reserved word in JS.
  * @param {string} name Name to test
@@ -74,7 +71,7 @@ util.isReserved = function isReserved(name) {
  */
 util.safeProp = function safeProp(prop) {
     if (!/^[$\w_]+$/.test(prop) || util.isReserved(prop))
-        return "[\"" + prop.replace(safePropBackslashRe, "\\\\").replace(safePropQuoteRe, "\\\"") + "\"]";
+        return "[" + JSON.stringify(prop) + "]";
     return "." + prop;
 };
 
