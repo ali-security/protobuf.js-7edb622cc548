@@ -82,7 +82,7 @@ function bundle(options) {
                 }))
             )
             .pipe(header(license, {
-                date: (new Date()).toUTCString().replace("GMT", "UTC").toLowerCase(),
+                date: (new Date(process.env.SOURCE_DATE_EPOCH ? +process.env.SOURCE_DATE_EPOCH * 1000 : Date.now())).toUTCString().replace("GMT", "UTC").toLowerCase(),
                 version: pkg.version
             }))
     .pipe(sourcemaps.write(".", { sourceRoot: "" }))

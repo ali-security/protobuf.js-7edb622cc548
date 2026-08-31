@@ -1,11 +1,11 @@
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch: {}
 name: release-please
 jobs:
   release-please:
+    if: false
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: google-github-actions/release-please-action@v3
         with:

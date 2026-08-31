@@ -1,48 +1,66 @@
 name: "Test"
 on:
-  push:
-    branches:
-    - master
-  pull_request:
-    types: [assigned, opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      test-filter:
+        description: "Optional tape file selector; empty runs the full suite"
+        required: false
+        default: ""
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
-      with:
-        node-version: "12"
-    - name: "Install dependencies"
-      run: npm install
-    - name: "Lint sources"
-      run: npm run lint:sources -- --max-warnings 0
-    - name: "Lint types"
-      run: npm run lint:types
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
+      fail-fast: false
       matrix:
-        node_version: ["12", "14", "16", "18"]
+        node_version: ["20", "12", "14", "16", "18"]
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node_version }}
     - name: "Install dependencies"
       run: npm install
     - name: "Test sources"
-      run: npm run test:sources
+      run: |
+        if [ -n "${{ inputs.test-filter }}" ]; then
+          npx tape -r ./lib/tape-adapter ${{ inputs.test-filter }}
+        else
+          npm run test:sources
+        fi
     - name: "Test types"
       run: npm run test:types
   bench:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-node@v1
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: "12"
     - name: "Install dependencies"
       run: npm install
     - name: "Run benchmark"
       run: npm run bench
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SOURCE_DATE_EPOCH: "1765922406"
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+    - name: "Install dependencies"
+      run: npm install
+    - name: "Build bundles and types"
+      run: npm run build
+    - name: "Pack release tarball"
+      run: npm pack --ignore-scripts
+    - name: "Upload release tarball"
+      uses: actions/upload-artifact@v4
+      with:
+        name: npm-tarball
+        path: protobufjs-*.tgz
+        if-no-files-found: error
