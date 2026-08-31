@@ -260,6 +260,13 @@ util.makeProp = function makeProp(obj, key) {
 };
 
 /**
+ * Maximum nesting depth accepted when reading descriptors, JSON descriptors and .proto sources.
+ * @memberof util
+ * @type {number}
+ */
+util.recursionLimit = 100; // protoc: CodedInputStream::default_recursion_limit_
+
+/**
  * Converts the first character of a string to lower case.
  * @param {string} str String to convert
  * @returns {string} Converted string

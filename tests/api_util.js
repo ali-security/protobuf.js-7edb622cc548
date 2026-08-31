@@ -142,6 +142,16 @@ tape.test("util", function(test) {
         test.end();
     });
 
+    test.test(test.name + " - checkDepth", function(test) {
+        test.equal(util.recursionLimit, 100, "should limit recursion by default");
+        test.equal(util.checkDepth(undefined), 0, "should treat an omitted depth as zero");
+        test.equal(util.checkDepth(util.recursionLimit), util.recursionLimit, "should accept a depth at the limit");
+        test.throws(function() {
+            util.checkDepth(util.recursionLimit + 1);
+        }, /max depth exceeded/, "should reject a depth beyond the limit");
+        test.end();
+    });
+
     test.test(test.name + " - type lookups", function(test) {
         test.equal(Object.getPrototypeOf(protobuf.types.basic), null, "should not inherit basic type lookups");
         test.equal(Object.getPrototypeOf(protobuf.types.defaults), null, "should not inherit default value lookups");
