@@ -101,6 +101,58 @@ tape.test("reflected types", function(test) {
     test.end();
 });
 
+// A type name ends up verbatim in the function name position of the code generated
+// for the constructor, encoder, decoder, verifier and converters, which is then
+// handed to `Function(...)`. A name carrying non-word characters therefore used to
+// escape that position and run arbitrary code as soon as a message type built from
+// an untrusted definition was used.
+tape.test("reflected types with malicious names", function(test) {
+
+    // closes the "function <name>(" of the generated function, runs the payload as
+    // part of the returned expression, then reopens a valid function name
+    var payload = "Evil(){}, (global.__protobufjsInjected = true), function Evil";
+    var sanitized = "Evilglobal__protobufjsInjectedtruefunctionEvil";
+
+    delete global.__protobufjsInjected;
+
+    var type = new protobuf.Type(payload);
+    test.equal(type.name, sanitized, "should strip non-word characters from the type name");
+    test.ok(/^\w*$/.test(type.name), "should only leave word characters in the type name");
+
+    var ctor = null;
+    test.doesNotThrow(function() {
+        ctor = type.ctor;
+    }, Error, "should not throw a syntax error when generating a constructor");
+    test.equal(typeof ctor, "function", "should generate a constructor from the sanitized name");
+    test.equal(global.__protobufjsInjected, undefined, "should not execute injected code when generating a constructor");
+
+    // same through the JSON descriptor path, which is how untrusted definitions arrive
+    var json = { nested: {} };
+    json.nested[payload] = {
+        fields: {
+            a: { type: "string", id: 1 }
+        }
+    };
+    var root = protobuf.Root.fromJSON(json);
+    test.equal(root.get(payload), null, "should not register the unsanitized name");
+
+    var Evil = root.lookupType(sanitized);
+    test.ok(Evil instanceof protobuf.Type, "should register types from JSON descriptors under the sanitized name");
+
+    test.doesNotThrow(function() {
+        Evil.setup();
+    }, Error, "should not throw a syntax error when generating encoder, decoder, verifier and converters");
+    test.equal(global.__protobufjsInjected, undefined, "should not execute injected code when setting up the type");
+
+    var buffer = Evil.encode(Evil.create({ a: "hello" })).finish();
+    test.same(Evil.toObject(Evil.decode(buffer)), { a: "hello" }, "should still encode and decode messages of a sanitized type");
+    test.equal(global.__protobufjsInjected, undefined, "should not execute injected code when encoding or decoding");
+
+    delete global.__protobufjsInjected;
+
+    test.end();
+});
+
 tape.test("feature resolution legacy proto3", function(test) {
     var json = {
         fields: {
