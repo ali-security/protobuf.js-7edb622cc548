@@ -71,8 +71,13 @@ function decoder(mtype) {
 
             if (types.long[field.keyType] !== undefined) gen
                 ("%s[typeof k===\"object\"?util.longToHash(k):k]=value", ref);
-            else gen
+            else {
+                if (field.keyType === "string") gen
+                ("if(k===\"__proto__\")")
+                    ("util.makeProp(%s,k)", ref);
+                gen
                 ("%s[k]=value", ref);
+            }
 
         // Repeated fields
         } else if (field.repeated) { gen

@@ -177,7 +177,7 @@ util.decorateEnum = function decorateEnum(object) {
 util.setProperty = function setProperty(dst, path, value, ifNotSet) {
     function setProp(dst, path, value) {
         var part = path.shift();
-        if (part === "__proto__" || part === "prototype") {
+        if (part === "__proto__" || part === "prototype" || part === "constructor") {
           return dst;
         }
         if (path.length > 0) {

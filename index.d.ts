@@ -2120,6 +2120,13 @@ export namespace util {
     function merge(dst: { [k: string]: any }, src: { [k: string]: any }, ifNotSet?: boolean): { [k: string]: any };
 
     /**
+     * Makes a property safe for assignment as an own property.
+     * @param obj Object
+     * @param key Property key
+     */
+    function makeProp(obj: { [k: string]: any }, key: string): void;
+
+    /**
      * Converts the first character of a string to lower case.
      * @param str String to convert
      * @returns Converted string

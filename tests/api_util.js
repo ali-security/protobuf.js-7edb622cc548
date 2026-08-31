@@ -16,6 +16,10 @@ tape.test("util", function(test) {
         test.same(o, { a: 2 }, "should merge existing keys");
         util.merge(o, { a: 3 }, true);
         test.same(o, { a: 2 }, "should not merge existing keys");
+        util.merge(o, JSON.parse("{\"__proto__\":{\"marker\":true}}"));
+        test.equal(Object.getPrototypeOf(o), Object.prototype, "should keep the target object shape");
+        test.notOk(Object.prototype.hasOwnProperty.call(o, "__proto__"), "should skip reserved keys");
+        test.equal(o.marker, undefined, "should not expose skipped values");
         test.end();
     });
 
@@ -104,6 +108,41 @@ tape.test("util", function(test) {
 
         util.setProperty({}, "constructor.prototype.test", "value");
         test.is({}.test, undefined);
+
+        var objectKeys = Object.keys;
+        try {
+            util.setProperty({}, "constructor.keys", "value");
+            test.equal(Object.keys, objectKeys, "should not overwrite Object constructor properties");
+        } finally {
+            Object.keys = objectKeys;
+        }
+
+        test.end();
+    });
+
+    test.test(test.name + " - type lookups", function(test) {
+        test.equal(Object.getPrototypeOf(protobuf.types.basic), null, "should not inherit basic type lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.defaults), null, "should not inherit default value lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.long), null, "should not inherit long type lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.mapKey), null, "should not inherit map key lookups");
+        test.equal(Object.getPrototypeOf(protobuf.types.packed), null, "should not inherit packed type lookups");
+
+        Object.prototype.notAType = 0;
+        try {
+            test.throws(function() {
+                protobuf.Root.fromJSON({
+                    nested: {
+                        Message: {
+                            fields: {
+                                value: { type: "notAType", id: 1 }
+                            }
+                        }
+                    }
+                });
+            }, /no such Type or Enum/, "should ignore inherited type lookup keys");
+        } finally {
+            delete Object.prototype.notAType;
+        }
 
         test.end();
     });

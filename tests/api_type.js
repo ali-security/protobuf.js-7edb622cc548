@@ -153,6 +153,31 @@ tape.test("reflected types with malicious names", function(test) {
     test.end();
 });
 
+tape.test("generated message constructors", function(test) {
+    var root = protobuf.Root.fromJSON({
+        nested: {
+            Message: {
+                fields: {
+                    value: { type: "uint32", id: 1 }
+                }
+            }
+        }
+    });
+    var Message = root.lookupType("Message");
+    var msg = new Message.ctor(JSON.parse("{\"__proto__\":{\"marker\":true},\"value\":1}"));
+
+    test.equal(msg.value, 1, "should copy regular properties");
+    test.equal(msg.marker, undefined, "should ignore reserved properties");
+
+    var type = new protobuf.Type("Type");
+    type.add(new protobuf.Field("__proto__", 2, "uint32"));
+    test.equal(type.get("__proto__"), null, "should ignore reserved field names");
+    type.add(new protobuf.OneOf("__proto__"));
+    test.equal(type.get("__proto__"), null, "should ignore reserved oneof names");
+
+    test.end();
+});
+
 tape.test("feature resolution legacy proto3", function(test) {
     var json = {
         fields: {
